@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import {
-    File as FileIcon,
-    FilePlus,
-    FileText,
-    Folder,
-    FolderPlus,
-    Image as ImageIcon,
-    Upload,
+  File as FileIcon,
+  FilePlus,
+  FileText,
+  Folder,
+  FolderPlus,
+  Image as ImageIcon,
+  MoreVertical,
+  Upload,
 } from "lucide-vue-next";
 import { useFileActions } from "~/composables/useFileActions";
 import { useFileCreation } from "~/composables/useFileCreation";
@@ -66,11 +67,12 @@ const navigateUp = () => {
 };
 
 const folders = computed(() => {
-  const backItem = props.currentPath ? [{ name: "..", path: "..", type: "tree" as "tree" | "blob" }] : [];
+  const backItem = props.currentPath
+    ? [{ name: "..", path: "..", type: "tree" as "tree" | "blob" }]
+    : [];
   return [...backItem, ...props.nodes.filter((n) => n.type === "tree")];
 });
 const files = computed(() => props.nodes.filter((n) => n.type !== "tree"));
-
 
 const { createFolder, createNote, triggerUpload, handleDrop } =
   useFileActions();
@@ -78,7 +80,6 @@ const { createFolder, createNote, triggerUpload, handleDrop } =
 const onNewFolder = () => createFolder(props.currentPath, props.creationSource);
 const onNewNote = () => createNote(props.currentPath, props.creationSource);
 const onUpload = () => triggerUpload(props.currentPath);
-
 
 const isDragging = ref(false);
 
@@ -104,17 +105,14 @@ const onDrop = async (e: DragEvent) => {
   }
 };
 
-
 const creationInput = ref<HTMLInputElement | null>(null);
 const creationCard = ref<HTMLElement | null>(null);
 
 const { creationName, confirmCreation, cancelCreation } = useFileCreation(
-  creationCard, 
+  creationCard,
   creationInput,
-  { enableClickOutside: true }
+  { enableClickOutside: true },
 );
-
-
 
 const {
   contextMenu,
@@ -132,7 +130,13 @@ const {
     @dragleave="onDragLeave"
     @drop="onDrop"
     @click="closeContextMenu"
-    @contextmenu="handleBackgroundContextMenu($event, props.currentPath, props.creationSource)"
+    @contextmenu="
+      handleBackgroundContextMenu(
+        $event,
+        props.currentPath,
+        props.creationSource,
+      )
+    "
   >
     <ClientOnly>
       <Teleport to="#header-actions">
@@ -151,17 +155,16 @@ const {
     </ClientOnly>
 
     <div class="bookshelf">
-      
       <div v-if="folders.length > 0" class="shelf-section">
         <h3 class="shelf-label">Folders</h3>
         <div class="grid">
-          
           <div
             v-if="
               store.pendingCreation &&
               store.pendingCreation.type === 'tree' &&
               store.pendingCreation.parentPath === currentPath &&
-              ( (!store.pendingCreation.source && !creationSource) || (store.pendingCreation.source === creationSource) )
+              ((!store.pendingCreation.source && !creationSource) ||
+                store.pendingCreation.source === creationSource)
             "
             class="item-card folder-card creation-card"
             ref="creationCard"
@@ -196,22 +199,30 @@ const {
             <div class="folder-body">
               <Folder :size="32" class="icon" />
               <span class="name" :title="folder.name">{{ folder.name }}</span>
+              <button
+                class="mobile-menu-btn"
+                @click.stop.prevent="
+                  handleContextMenu($event, folder as any, {}, creationSource)
+                "
+                v-if="folder.path !== '..'"
+              >
+                <MoreVertical :size="16" />
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      
       <div v-if="files.length > 0" class="shelf-section">
         <h3 class="shelf-label">Documents</h3>
         <div class="grid">
-          
           <div
             v-if="
               store.pendingCreation &&
               store.pendingCreation.type === 'blob' &&
               store.pendingCreation.parentPath === currentPath &&
-              ( (!store.pendingCreation.source && !creationSource) || (store.pendingCreation.source === creationSource) )
+              ((!store.pendingCreation.source && !creationSource) ||
+                store.pendingCreation.source === creationSource)
             "
             class="item-card file-card creation-card"
             ref="creationCard"
@@ -246,6 +257,14 @@ const {
               <div class="content-preview">
                 <component :is="getIcon(file)" :size="32" class="file-icon" />
                 <span class="file-name">{{ file.name }}</span>
+                <button
+                  class="mobile-menu-btn"
+                  @click.stop.prevent="
+                    handleContextMenu($event, file, {}, creationSource)
+                  "
+                >
+                  <MoreVertical :size="16" />
+                </button>
               </div>
             </div>
           </div>
@@ -273,10 +292,19 @@ const {
   height: 100%;
   overflow-y: auto;
   background: var(--bg-dark-100);
-   
-  background: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.03) 0%, transparent 20%),
-              radial-gradient(circle at 90% 80%, rgba(56, 189, 248, 0.03) 0%, transparent 20%),
-              var(--bg-dark-100);
+
+  background:
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(124, 58, 237, 0.03) 0%,
+      transparent 20%
+    ),
+    radial-gradient(
+      circle at 90% 80%,
+      rgba(56, 189, 248, 0.03) 0%,
+      transparent 20%
+    ),
+    var(--bg-dark-100);
 }
 
 .dragging {
@@ -348,41 +376,67 @@ const {
   gap: 1.5rem;
 }
 
+.mobile-menu-btn {
+  display: none;
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  z-index: 10;
+
+  &:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 .item-card {
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 
   &:hover {
     transform: translateY(-6px);
   }
 }
 
- 
 .folder-card {
   position: relative;
 
   .folder-tab {
     width: 45px;
     height: 12px;
-     
-    background: linear-gradient(135deg, var(--bg-dark-300), var(--bg-dark-200)); 
+
+    background: linear-gradient(135deg, var(--bg-dark-300), var(--bg-dark-200));
     border-radius: 6px 6px 0 0;
     margin-bottom: -1px;
-    box-shadow: 
+    box-shadow:
       -1px -1px 3px rgba(255, 255, 255, 0.05),
       1px 1px 3px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.05); 
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-bottom: none;
     position: relative;
     z-index: 1;
   }
 
   .folder-body {
-     
     background: linear-gradient(145deg, var(--bg-dark-300), var(--bg-dark-200));
-    box-shadow: 
-        5px 5px 10px rgba(0, 0, 0, 0.3), 
-        -2px -2px 6px rgba(255, 255, 255, 0.03);
+    box-shadow:
+      5px 5px 10px rgba(0, 0, 0, 0.3),
+      -2px -2px 6px rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.05);
 
     border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md);
@@ -416,27 +470,25 @@ const {
   }
 
   &:hover .folder-body {
-     
     transform: translateY(-4px);
-    box-shadow: 
-        8px 8px 16px rgba(0, 0, 0, 0.4), 
-        -4px -4px 8px rgba(255, 255, 255, 0.05);
-    background: linear-gradient(145deg, var(--bg-dark-300), var(--bg-dark-200));  
+    box-shadow:
+      8px 8px 16px rgba(0, 0, 0, 0.4),
+      -4px -4px 8px rgba(255, 255, 255, 0.05);
+    background: linear-gradient(145deg, var(--bg-dark-300), var(--bg-dark-200));
     border-color: rgba(255, 255, 255, 0.1);
 
     .icon {
       opacity: 1;
-      color: var(--color-primary);  
+      color: var(--color-primary);
       transform: scale(1.05);
     }
   }
 
   &:hover .folder-tab {
-     
     transform: translateY(-4px);
-    box-shadow: 
-        -2px -2px 4px rgba(255, 255, 255, 0.05),
-        2px 2px 4px rgba(0, 0, 0, 0.3);
+    box-shadow:
+      -2px -2px 4px rgba(255, 255, 255, 0.05),
+      2px 2px 4px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -454,14 +506,12 @@ const {
   }
 }
 
- 
 .file-card {
   .paper-sheet {
-     
     background: linear-gradient(145deg, var(--bg-dark-300), var(--bg-dark-200));
-    box-shadow: 
-        5px 5px 10px rgba(0, 0, 0, 0.3), 
-        -2px -2px 6px rgba(255, 255, 255, 0.03);
+    box-shadow:
+      5px 5px 10px rgba(0, 0, 0, 0.3),
+      -2px -2px 6px rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.05);
 
     height: 180px;
@@ -473,26 +523,27 @@ const {
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
 
-     
     .line {
-      height: 4px;  
-      background: var(--bg-dark-300);  
+      height: 4px;
+      background: var(--bg-dark-300);
       border-radius: 2px;
       margin-bottom: 8px;
-      
-       
-      box-shadow: 
-        inset 1px 1px 3px rgba(0, 0, 0, 0.8),  
-        inset -1px -1px 2px rgba(255, 255, 255, 0.05),  
-        0 1px 0 rgba(255, 255, 255, 0.05);  
-        
-      opacity: 0.8;  
-      
+
+      box-shadow:
+        inset 1px 1px 3px rgba(0, 0, 0, 0.8),
+        inset -1px -1px 2px rgba(255, 255, 255, 0.05),
+        0 1px 0 rgba(255, 255, 255, 0.05);
+
+      opacity: 0.8;
+
       position: relative;
       overflow: hidden;
 
-       
-      background: linear-gradient(90deg, var(--bg-dark-300), var(--bg-dark-400));
+      background: linear-gradient(
+        90deg,
+        var(--bg-dark-300),
+        var(--bg-dark-400)
+      );
 
       &.short {
         width: 60%;
@@ -513,8 +564,8 @@ const {
         color: var(--text-secondary);
         opacity: 0.7;
         transition: all 0.2s;
-         
-        filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+
+        filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
       }
       .file-name {
         font-size: 0.85rem;
@@ -529,9 +580,9 @@ const {
 
   &:hover .paper-sheet {
     transform: translateY(-4px);
-    box-shadow: 
-        8px 8px 16px rgba(0, 0, 0, 0.4), 
-        -4px -4px 8px rgba(255, 255, 255, 0.05);
+    box-shadow:
+      8px 8px 16px rgba(0, 0, 0, 0.4),
+      -4px -4px 8px rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);
 
     .content-preview .file-icon {
@@ -566,10 +617,9 @@ const {
   text-align: center;
   font-size: 0.9rem;
   padding: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
- 
 .file-card.creation-card {
   .creation-input {
     color: var(--text-primary);

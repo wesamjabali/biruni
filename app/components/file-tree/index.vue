@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import {
-    ChevronRight,
-    File as FileIcon,
-    FileText,
-    Folder,
-    Star
+  ChevronRight,
+  File as FileIcon,
+  FileText,
+  Folder,
+  MoreVertical,
+  Star,
 } from "lucide-vue-next";
 import { useFileActions } from "~/composables/useFileActions";
 import { useFileCreation } from "~/composables/useFileCreation";
-import { useNodeContextMenu, type ContextMenuState } from "~/composables/useNodeContextMenu";
+import {
+  useNodeContextMenu,
+  type ContextMenuState,
+} from "~/composables/useNodeContextMenu";
 import { useGitStore, type FileNode } from "~/stores/git";
 import ContextMenu from "./ContextMenu.vue";
 
@@ -30,63 +34,42 @@ const { handleDrop } = useFileActions();
 const expandedPaths = ref(new Set<string>());
 const dragOverPath = ref<string | null>(null);
 
-
 const CONTEXT_MENU_KEY = "fileTreeContextMenu";
-
-
 
 const isRoot = props.depth === undefined;
 
-
-
-
-const { contextMenu: localContextMenu, handleContextMenu: localHandleContextMenu, handleRootContextMenu, closeContextMenu } = useNodeContextMenu();
+const {
+  contextMenu: localContextMenu,
+  handleContextMenu: localHandleContextMenu,
+  handleRootContextMenu,
+  closeContextMenu,
+} = useNodeContextMenu();
 
 const contextMenu = isRoot
   ? localContextMenu
-  : inject<Ref<ContextMenuState>>(CONTEXT_MENU_KEY)!; 
-
+  : inject<Ref<ContextMenuState>>(CONTEXT_MENU_KEY)!;
 
 if (isRoot) {
   provide(CONTEXT_MENU_KEY, contextMenu);
 }
 
-
 const handleContextMenu = (e: MouseEvent, node: FileNode) => {
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    localHandleContextMenu(e, node, {
-        onExpand: () => {
-             if (!expandedPaths.value.has(node.path)) {
-                toggleFolder(node);
-             }
+  localHandleContextMenu(
+    e,
+    node,
+    {
+      onExpand: () => {
+        if (!expandedPaths.value.has(node.path)) {
+          toggleFolder(node);
         }
-    }, props.creationSource);
+      },
+    },
+    props.creationSource,
+  );
 
-    if (!isRoot) {
-        contextMenu.value = localContextMenu.value;
-    }
+  if (!isRoot) {
+    contextMenu.value = localContextMenu.value;
+  }
 };
 
 const { triggerUpload } = useFileActions();
@@ -94,7 +77,6 @@ const { triggerUpload } = useFileActions();
 const toggleFolder = (node: FileNode, event?: Event) => {
   if (node.type !== "tree") return;
 
-  
   const newSet = new Set(expandedPaths.value);
   if (newSet.has(node.path)) {
     newSet.delete(node.path);
@@ -105,7 +87,6 @@ const toggleFolder = (node: FileNode, event?: Event) => {
 };
 
 const selectFile = (node: FileNode) => {
-  
   if (node.type === "tree") {
     const newSet = new Set(expandedPaths.value);
     newSet.add(node.path);
@@ -114,7 +95,6 @@ const selectFile = (node: FileNode) => {
 
   emit("select", node);
 
-  
   if (!store.currentRepo) return;
   const [owner, repo] = store.currentRepo.full_name.split("/");
   router.push({
@@ -125,59 +105,61 @@ const selectFile = (node: FileNode) => {
 
 const getIcon = (node: FileNode) => {
   if (node.type === "tree") return Folder;
-  if (node.name.endsWith(".md") || node.name.endsWith(".pdf") || node.name.endsWith(".txt")) return FileText;
+  if (
+    node.name.endsWith(".md") ||
+    node.name.endsWith(".pdf") ||
+    node.name.endsWith(".txt")
+  )
+    return FileText;
   return FileIcon;
 };
 
-
 const creationInput = ref<HTMLInputElement | HTMLInputElement[] | null>(null);
-const creationContainer = ref<HTMLElement | null>(null); 
+const creationContainer = ref<HTMLElement | null>(null);
 
 const { creationName, confirmCreation, cancelCreation } = useFileCreation(
-  creationContainer, 
-  creationInput, 
-  { enableClickOutside: isRoot }
+  creationContainer,
+  creationInput,
+  { enableClickOutside: isRoot },
 );
 
 const shouldShowCreationObject = computed(() => {
-    if (!store.pendingCreation) return false;
-    
-    // If we have a creation source logic, check scopes
-    if (props.creationSource) {
-        // If pending creation has a source, it MUST match our source
-        if (store.pendingCreation.source && store.pendingCreation.source !== props.creationSource) {
-            return false;
-        }
-        // If pending creation has NO source, we might optionally default to showing it 
-        // OR we might decide that unscoped creations show everywhere. 
-        // For now, let's assume if we passed a source, we only want to handle creations for that source.
-        if (!store.pendingCreation.source) {
-             return false; 
-        }
-    } else {
-        // If we don't have a creation source (e.g. legacy or unspecified), 
-        // maybe we shouldn't show scoped creations?
-        // Let's say if pendingCreation has a source, and we don't, we hide it?
-        if (store.pendingCreation.source) {
-            return false;
-        }
+  if (!store.pendingCreation) return false;
+
+  // If we have a creation source logic, check scopes
+  if (props.creationSource) {
+    // If pending creation has a source, it MUST match our source
+    if (
+      store.pendingCreation.source &&
+      store.pendingCreation.source !== props.creationSource
+    ) {
+      return false;
     }
-    
-    return true;
+    // If pending creation has NO source, we might optionally default to showing it
+    // OR we might decide that unscoped creations show everywhere.
+    // For now, let's assume if we passed a source, we only want to handle creations for that source.
+    if (!store.pendingCreation.source) {
+      return false;
+    }
+  } else {
+    // If we don't have a creation source (e.g. legacy or unspecified),
+    // maybe we shouldn't show scoped creations?
+    // Let's say if pendingCreation has a source, and we don't, we hide it?
+    if (store.pendingCreation.source) {
+      return false;
+    }
+  }
+
+  return true;
 });
-
-
-
 
 watch(
   () => store.pendingCreation,
   async (val) => {
     if (val) {
-      
       if (val.parentPath) {
         const newSet = new Set(expandedPaths.value);
 
-        
         const pathParts = val.parentPath.split("/");
         let currentPath = "";
         for (const part of pathParts) {
@@ -189,7 +171,6 @@ watch(
       }
       await nextTick();
 
-      
       const containerEl = Array.isArray(creationContainer.value)
         ? creationContainer.value[0]
         : creationContainer.value;
@@ -199,19 +180,16 @@ watch(
       }
     }
   },
-  { deep: true }
+  { deep: true },
 );
-
 
 watch(
   () => store.currentFilePath,
   async (path) => {
     if (!path) return;
 
-    
     for (const node of props.nodes) {
       if (node.type === "tree") {
-        
         if (path.startsWith(node.path + "/")) {
           const newSet = new Set(expandedPaths.value);
           newSet.add(node.path);
@@ -220,7 +198,6 @@ watch(
       }
     }
 
-    
     if (props.nodes.some((n) => n.path === path)) {
       await nextTick();
       const activeEl = document.querySelector(".file-tree .node-item.active");
@@ -229,9 +206,8 @@ watch(
       }
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
-
 
 watch(
   () => [props.nodes, store.searchQuery],
@@ -250,30 +226,26 @@ watch(
       }
     }
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 );
-
-
 
 const onNodeDragStart = (e: DragEvent, node: FileNode) => {
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData(
       "application/json",
-      JSON.stringify({ path: node.path, type: node.type })
+      JSON.stringify({ path: node.path, type: node.type }),
     );
-    e.dataTransfer.setData("text/plain", node.path); 
+    e.dataTransfer.setData("text/plain", node.path);
   }
 };
 
 const onNodeDragOver = (e: DragEvent, node: FileNode) => {
-  
   if (node.type !== "tree") return;
   e.preventDefault();
   e.stopPropagation();
   dragOverPath.value = node.path;
 };
-
 
 const onNodeDrop = async (e: DragEvent, node: FileNode) => {
   if (node.type !== "tree") return;
@@ -281,14 +253,11 @@ const onNodeDrop = async (e: DragEvent, node: FileNode) => {
   e.stopPropagation();
   dragOverPath.value = null;
 
-  
   const rawData = e.dataTransfer?.getData("application/json");
   if (rawData) {
     try {
       const data = JSON.parse(rawData);
       if (data.path && data.type) {
-        
-        
         if (node.path === data.path || node.path.startsWith(data.path + "/")) {
           return;
         }
@@ -313,7 +282,7 @@ const onNodeDrop = async (e: DragEvent, node: FileNode) => {
 };
 
 const onRootDragOver = (e: DragEvent) => {
-  if (props.depth) return; 
+  if (props.depth) return;
   e.preventDefault();
   e.stopPropagation();
   dragOverPath.value = "root";
@@ -325,13 +294,11 @@ const onRootDrop = async (e: DragEvent) => {
   e.stopPropagation();
   dragOverPath.value = null;
 
-  
   const rawData = e.dataTransfer?.getData("application/json");
   if (rawData) {
     try {
       const data = JSON.parse(rawData);
       if (data.path && data.type) {
-        
         const newPath = data.path.split("/").pop() || "";
         if (newPath !== data.path) {
           await store.moveNode(data.path, newPath, data.type);
@@ -344,13 +311,11 @@ const onRootDrop = async (e: DragEvent) => {
   }
 
   if (e.dataTransfer?.files?.length) {
-    await handleDrop(Array.from(e.dataTransfer.files), ""); 
+    await handleDrop(Array.from(e.dataTransfer.files), "");
   }
 };
 
 const onDragLeave = (e: DragEvent) => {
-  
-  
   dragOverPath.value = null;
 };
 </script>
@@ -382,7 +347,6 @@ const onDragLeave = (e: DragEvent) => {
         @drop="onNodeDrop($event, node)"
         @dragleave="dragOverPath = null"
       >
-        
         <span
           v-if="node.type === 'tree'"
           class="chevron"
@@ -410,14 +374,19 @@ const onDragLeave = (e: DragEvent) => {
             :fill="store.mainFolder === node.path ? 'currentColor' : 'none'"
           />
         </button>
+
+        <button
+          class="mobile-menu-btn"
+          @click.stop.prevent="handleContextMenu($event, node)"
+        >
+          <MoreVertical :size="16" />
+        </button>
       </div>
 
-      
       <div
         v-if="node.type === 'tree' && expandedPaths.has(node.path)"
         class="children"
       >
-        
         <div
           v-if="
             store.pendingCreation &&
@@ -450,7 +419,6 @@ const onDragLeave = (e: DragEvent) => {
       </div>
     </div>
 
-    
     <div
       v-if="
         store.pendingCreation &&
@@ -504,7 +472,6 @@ const onDragLeave = (e: DragEvent) => {
   position: relative;
   overflow: hidden;
 
-   
   @media (max-width: 768px) {
     min-height: 48px;
     padding: 0.6rem 0.75rem;
@@ -512,11 +479,10 @@ const onDragLeave = (e: DragEvent) => {
 
   @media (hover: hover) {
     &:hover {
-       
       background: var(--bg-dark-300);
       transform: translateX(4px);
       color: var(--color-primary);
-      
+
       .icon {
         opacity: 1;
       }
@@ -524,10 +490,9 @@ const onDragLeave = (e: DragEvent) => {
   }
 
   &.active {
-     
     background: var(--bg-dark-300);
     color: var(--color-primary);
-    
+
     .icon {
       opacity: 1;
       color: var(--color-primary);
@@ -560,6 +525,31 @@ const onDragLeave = (e: DragEvent) => {
     pointer-events: none;
   }
 
+  .mobile-menu-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-left: 0.25rem;
+
+    &:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .mobile-menu-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
   .chevron {
     display: inline-flex;
     align-items: center;
@@ -568,7 +558,9 @@ const onDragLeave = (e: DragEvent) => {
     margin-right: 0.35rem;
     color: var(--text-muted);
     cursor: pointer;
-    transition: transform 0.2s, color 0.2s;
+    transition:
+      transform 0.2s,
+      color 0.2s;
     width: 20px;
     height: 20px;
     flex-shrink: 0;
@@ -613,11 +605,11 @@ const onDragLeave = (e: DragEvent) => {
     transition: opacity 0.2s;
   }
 
-  &:hover .icon, &.active .icon {
+  &:hover .icon,
+  &.active .icon {
     opacity: 1;
   }
 
-   
   .pin-btn {
     background: transparent;
     border: none;
@@ -648,7 +640,7 @@ const onDragLeave = (e: DragEvent) => {
 
   @media (max-width: 768px) {
     .pin-btn {
-      opacity: 1;  
+      opacity: 1;
     }
   }
 
@@ -677,7 +669,7 @@ const onDragLeave = (e: DragEvent) => {
   outline: none;
   min-height: 36px;
   pointer-events: auto;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
   @media (max-width: 768px) {
     min-height: 44px;

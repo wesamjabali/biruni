@@ -1,25 +1,24 @@
 <script setup lang="ts">
 import {
-    CheckSquare,
-    Clipboard,
-    Copy,
-    EllipsisVertical,
-    Eye,
-    Image as ImageIcon,
-    Info,
-    Loader2,
-    Plus,
-    Redo,
-    RotateCcw,
-    Save,
-    Scissors,
-    Trash2,
-    Undo,
+  CheckSquare,
+  Clipboard,
+  Copy,
+  Edit3,
+  EllipsisVertical,
+  Eye,
+  Image as ImageIcon,
+  Info,
+  Loader2,
+  Plus,
+  Redo,
+  RotateCcw,
+  Save,
+  Scissors,
+  Trash2,
+  Undo,
 } from "lucide-vue-next";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useFileActions } from "~/composables/useFileActions";
-
-
 
 import { useInsertActions } from "~/composables/useInsertActions";
 
@@ -37,7 +36,7 @@ import Preview from "./Preview.vue";
 const store = useGitStore();
 const ui = useUIStore();
 const geminiStore = useGeminiStore();
-const { deleteCurrentFile } = useFileActions();
+const { deleteCurrentFile, renameCurrentFile } = useFileActions();
 const showPreview = ref(false);
 const showAssetPicker = ref(false);
 const showHelpDialog = ref(false);
@@ -54,7 +53,7 @@ const revert = async () => {
     "Are you sure you want to discard your local changes? This cannot be undone.",
     "Discard",
     "Cancel",
-    true
+    true,
   );
   if (confirmed) {
     await store.revertFile();
@@ -62,10 +61,11 @@ const revert = async () => {
 };
 
 const handleAssetPick = (payload: { path: string; type: "asset" | "note" }) => {
-  const opts = contextMenuInsertionPos.value ? { at: contextMenuInsertionPos.value } : undefined;
+  const opts = contextMenuInsertionPos.value
+    ? { at: contextMenuInsertionPos.value }
+    : undefined;
 
   if (payload.type === "asset") {
-    
     const encodedPath = payload.path
       .split("/")
       .map((p) => encodeURIComponent(p))
@@ -73,10 +73,9 @@ const handleAssetPick = (payload: { path: string; type: "asset" | "note" }) => {
     const linkText = `![](${encodedPath})`;
     obsidianEditorRef.value?.insertText(linkText, opts);
   } else {
-    
     const filename =
       payload.path.split("/").pop()?.replace(".md", "") || "Link";
-    
+
     const encodedPath = payload.path
       .split("/")
       .map((p) => encodeURIComponent(p))
@@ -84,128 +83,125 @@ const handleAssetPick = (payload: { path: string; type: "asset" | "note" }) => {
     const linkText = `[${filename}](${encodedPath})`;
     obsidianEditorRef.value?.insertText(linkText, opts);
   }
-  
-  
+
   contextMenuInsertionPos.value = undefined;
 };
 
-
 const { insertItems } = useInsertActions(obsidianEditorRef, showAssetPicker);
-
 
 const contextMenuVisible = ref(false);
 const contextMenuX = ref(0);
 const contextMenuY = ref(0);
 const contextMenuActions = ref<any[]>([]);
 const contextMenuTarget = ref<{ id: string; code: string } | null>(null);
-const contextMenuInsertionPos = ref<{ x: number; y: number } | undefined>(undefined);
+const contextMenuInsertionPos = ref<{ x: number; y: number } | undefined>(
+  undefined,
+);
 
 const handleContextMenu = (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    contextMenuX.value = e.clientX;
-    contextMenuY.value = e.clientY;
+  e.preventDefault();
+  e.stopPropagation();
+  contextMenuX.value = e.clientX;
+  contextMenuY.value = e.clientY;
 
-    const clickPos = { x: e.clientX, y: e.clientY };
+  const clickPos = { x: e.clientX, y: e.clientY };
 
-    
-    const mapItems = (items: any[]): any[] => {
-        return items.map(item => ({
-            ...item,
-            action: item.action ? () => {
-                 if (item.label === "Asset / Image") {
-                     contextMenuInsertionPos.value = clickPos;
-                     item.action();
-                 } else {
-                     item.action({ at: clickPos });
-                 }
-            } : undefined,
-            children: item.children ? mapItems(item.children) : undefined
-        }));
-    };
+  const mapItems = (items: any[]): any[] => {
+    return items.map((item) => ({
+      ...item,
+      action: item.action
+        ? () => {
+            if (item.label === "Asset / Image") {
+              contextMenuInsertionPos.value = clickPos;
+              item.action();
+            } else {
+              item.action({ at: clickPos });
+            }
+          }
+        : undefined,
+      children: item.children ? mapItems(item.children) : undefined,
+    }));
+  };
 
-    const mappedInsertItems = mapItems(insertItems.value);
+  const mappedInsertItems = mapItems(insertItems.value);
 
-     contextMenuActions.value = [
-        {
-            label: "Insert",
-            icon: Plus,
-            children: mappedInsertItems
-        },
-        {
-          label: "Undo",
-          icon: Undo,
-          action: () => obsidianEditorRef.value?.triggerAction("undo"),
-        },
-        {
-          label: "Redo",
-          icon: Redo, 
-          action: () => obsidianEditorRef.value?.triggerAction("redo"),
-        },
-        {
-          label: "Cut",
-          icon: Scissors,
-          action: () => obsidianEditorRef.value?.triggerAction("cut"),
-        },
-        {
-          label: "Copy",
-          icon: Copy,
-          action: () => obsidianEditorRef.value?.triggerAction("copy"),
-        },
-        {
-          label: "Paste",
-          icon: Clipboard,
-          action: () => obsidianEditorRef.value?.triggerAction("paste"),
-        },
-        {
-          label: "Select All",
-          icon: CheckSquare,
-          action: () => obsidianEditorRef.value?.triggerAction("selectAll"),
-        },
-    ];
-    contextMenuVisible.value = true;
+  contextMenuActions.value = [
+    {
+      label: "Insert",
+      icon: Plus,
+      children: mappedInsertItems,
+    },
+    {
+      label: "Undo",
+      icon: Undo,
+      action: () => obsidianEditorRef.value?.triggerAction("undo"),
+    },
+    {
+      label: "Redo",
+      icon: Redo,
+      action: () => obsidianEditorRef.value?.triggerAction("redo"),
+    },
+    {
+      label: "Cut",
+      icon: Scissors,
+      action: () => obsidianEditorRef.value?.triggerAction("cut"),
+    },
+    {
+      label: "Copy",
+      icon: Copy,
+      action: () => obsidianEditorRef.value?.triggerAction("copy"),
+    },
+    {
+      label: "Paste",
+      icon: Clipboard,
+      action: () => obsidianEditorRef.value?.triggerAction("paste"),
+    },
+    {
+      label: "Select All",
+      icon: CheckSquare,
+      action: () => obsidianEditorRef.value?.triggerAction("selectAll"),
+    },
+  ];
+  contextMenuVisible.value = true;
 };
 
-
 const downloadMermaidPng = async () => {
-    if (!contextMenuTarget.value) return;
-    
-    const container = document.getElementById(contextMenuTarget.value.id);
-    if (!container) {
-        alert("Could not find diagram element. Try hovering it again.");
-        return;
-    }
-    
-    const svg = container.querySelector('svg');
-    if (svg) {
-        
-        const rasterize = (svg: SVGSVGElement) => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const data = (new XMLSerializer()).serializeToString(svg);
-            const img = new Image();
-            const blob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'});
-            const url = URL.createObjectURL(blob);
-            
-            img.onload = () => {
-                canvas.width = svg.getBoundingClientRect().width * 2; 
-                canvas.height = svg.getBoundingClientRect().height * 2;
-                ctx?.scale(2, 2);
-                ctx?.drawImage(img, 0, 0);
-                URL.revokeObjectURL(url);
-                
-                
-                const a = document.createElement('a');
-                a.download = `mermaid-diagram-${Date.now()}.png`;
-                a.href = canvas.toDataURL('image/png');
-                a.click();
-            };
-            img.src = url;
-        };
-        rasterize(svg);
-    } else {
-        alert("SVG not found.");
-    }
+  if (!contextMenuTarget.value) return;
+
+  const container = document.getElementById(contextMenuTarget.value.id);
+  if (!container) {
+    alert("Could not find diagram element. Try hovering it again.");
+    return;
+  }
+
+  const svg = container.querySelector("svg");
+  if (svg) {
+    const rasterize = (svg: SVGSVGElement) => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const data = new XMLSerializer().serializeToString(svg);
+      const img = new Image();
+      const blob = new Blob([data], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      img.onload = () => {
+        canvas.width = svg.getBoundingClientRect().width * 2;
+        canvas.height = svg.getBoundingClientRect().height * 2;
+        ctx?.scale(2, 2);
+        ctx?.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+
+        const a = document.createElement("a");
+        a.download = `mermaid-diagram-${Date.now()}.png`;
+        a.href = canvas.toDataURL("image/png");
+        a.click();
+      };
+      img.src = url;
+    };
+    rasterize(svg);
+  } else {
+    alert("SVG not found.");
+  }
 };
 
 const mermaidActions = computed(() => [
@@ -213,26 +209,31 @@ const mermaidActions = computed(() => [
     label: "Download PNG",
     icon: ImageIcon,
     action: downloadMermaidPng,
-  }
+  },
 ]);
 
 const handleMermaidContextMenu = (e: Event) => {
-    const customEvent = e as CustomEvent;
-    const { x, y, id, code } = customEvent.detail;
-    contextMenuX.value = x;
-    contextMenuY.value = y;
-    contextMenuTarget.value = { id, code }; 
-    contextMenuActions.value = mermaidActions.value;
-    contextMenuVisible.value = true;
+  const customEvent = e as CustomEvent;
+  const { x, y, id, code } = customEvent.detail;
+  contextMenuX.value = x;
+  contextMenuY.value = y;
+  contextMenuTarget.value = { id, code };
+  contextMenuActions.value = mermaidActions.value;
+  contextMenuVisible.value = true;
 };
 
 const showAiTools = computed(() => !!settings.geminiApiKey);
 
 const menuItems = computed(() => [
   {
-      label: "Help",
-      icon: Info,
-      action: () => (showHelpDialog.value = true),
+    label: "Help",
+    icon: Info,
+    action: () => (showHelpDialog.value = true),
+  },
+  {
+    label: "Rename File",
+    icon: Edit3,
+    action: renameCurrentFile,
   },
   {
     label: "Revert Changes",
@@ -249,11 +250,11 @@ const menuItems = computed(() => [
 ]);
 
 onMounted(() => {
-    window.addEventListener("mermaid-context-menu", handleMermaidContextMenu);
+  window.addEventListener("mermaid-context-menu", handleMermaidContextMenu);
 });
 
 onUnmounted(() => {
-    window.removeEventListener("mermaid-context-menu", handleMermaidContextMenu);
+  window.removeEventListener("mermaid-context-menu", handleMermaidContextMenu);
 });
 </script>
 
@@ -262,8 +263,6 @@ onUnmounted(() => {
     <ClientOnly>
       <Teleport to="#header-actions">
         <div class="actions">
-
-
           <button
             class="btn-secondary"
             @click="showPreview = true"
@@ -327,7 +326,7 @@ onUnmounted(() => {
       @close="showAssetPicker = false"
       @pick="handleAssetPick"
     />
-    
+
     <ContextMenu
       :visible="contextMenuVisible"
       :x="contextMenuX"
@@ -336,9 +335,9 @@ onUnmounted(() => {
       @close="contextMenuVisible = false"
     />
 
-    <MarkdownHelpDialog 
-        :is-open="showHelpDialog"
-        @close="showHelpDialog = false"
+    <MarkdownHelpDialog
+      :is-open="showHelpDialog"
+      @close="showHelpDialog = false"
     />
   </div>
 </template>
@@ -356,7 +355,6 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.5rem;
 
-   
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -366,11 +364,10 @@ onUnmounted(() => {
 
   @media (max-width: 768px) {
     gap: 0.25rem;
-    padding-right: 0.5rem;  
+    padding-right: 0.5rem;
     max-width: 100%;
     white-space: nowrap;
 
-     
     :deep(.trigger-btn .label) {
       display: none;
     }
@@ -380,8 +377,6 @@ onUnmounted(() => {
 .spacer {
   flex: 1;
 }
-
-
 
 .btn-primary {
   background: linear-gradient(145deg, var(--bg-dark-300), var(--bg-dark-200));
@@ -396,7 +391,7 @@ onUnmounted(() => {
   min-height: 36px;
   display: inline-flex;
   align-items: center;
-  box-shadow: 
+  box-shadow:
     -2px -2px 6px rgba(255, 255, 255, 0.05),
     2px 2px 6px rgba(0, 0, 0, 0.5);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -411,7 +406,7 @@ onUnmounted(() => {
   &:hover:not(:disabled) {
     transform: translateY(-1px);
     background: linear-gradient(145deg, var(--bg-dark-300), var(--bg-dark-100));
-    box-shadow: 
+    box-shadow:
       -3px -3px 8px rgba(255, 255, 255, 0.05),
       3px 3px 8px rgba(0, 0, 0, 0.6);
     color: var(--color-primary);
@@ -419,7 +414,7 @@ onUnmounted(() => {
 
   &:active:not(:disabled) {
     transform: translateY(0);
-    box-shadow: 
+    box-shadow:
       inset 2px 2px 5px rgba(0, 0, 0, 0.6),
       inset -2px -2px 5px rgba(255, 255, 255, 0.05);
   }
@@ -432,10 +427,10 @@ onUnmounted(() => {
 
 .btn-secondary {
   background: transparent;
-  color: var(--text-secondary);  
+  color: var(--text-secondary);
   padding: 0.5rem 1rem;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);  
+  border: 1px solid var(--border-subtle);
   cursor: pointer;
   flex-shrink: 0;
   font-size: 0.9rem;
@@ -486,7 +481,9 @@ onUnmounted(() => {
   border-radius: var(--radius-sm);
   min-width: 40px;
   min-height: 40px;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 
   @media (hover: hover) {
     &:hover {

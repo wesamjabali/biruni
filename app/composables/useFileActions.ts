@@ -5,16 +5,14 @@ export function useFileActions() {
   const store = useGitStore();
   const router = useRouter();
 
-  
   const fileInput = ref<HTMLInputElement | null>(null);
   const uploadCallback = ref<((file: File) => void) | null>(null);
 
-  
   const ensureInput = () => {
     if (typeof document === "undefined") return;
 
     let input = document.getElementById(
-      "global-file-input"
+      "global-file-input",
     ) as HTMLInputElement;
     if (!input) {
       input = document.createElement("input");
@@ -26,9 +24,8 @@ export function useFileActions() {
       input.addEventListener("change", (e: Event) => {
         const target = e.target as HTMLInputElement;
         if (target.files && target.files.length > 0 && uploadCallback.value) {
-          
           Array.from(target.files).forEach((f) => uploadCallback.value!(f));
-          target.value = ""; 
+          target.value = "";
         }
       });
     }
@@ -38,7 +35,7 @@ export function useFileActions() {
   const createFolder = async (basePath: string | null, source?: string) => {
     console.log(
       "[useFileActions] createFolder called with basePath:",
-      basePath
+      basePath,
     );
     store.startCreation(basePath || null, "tree", source);
   };
@@ -77,19 +74,17 @@ export function useFileActions() {
       `Are you sure you want to delete ${pathToDelete}?`,
       "Delete",
       "Cancel",
-      true
+      true,
     );
     if (!confirmed) return;
 
     try {
       await store.deleteFile(pathToDelete, shaToDelete);
 
-      
       const parts = pathToDelete.split("/");
       parts.pop();
       const parentPath = parts.join("/");
 
-      
       if (store.currentRepo) {
         const owner = store.currentRepo.full_name.split("/")[0];
         const repo = store.currentRepo.name;
@@ -97,12 +92,40 @@ export function useFileActions() {
           ? `/repo/${owner}/${repo}/${parentPath}`
           : `/repo/${owner}/${repo}/`;
 
-        
         router.replace(target);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
       await store.openConfirmDialog("Error", "Failed to delete file", "OK", "");
+    }
+  };
+
+  const renameCurrentFile = async () => {
+    if (!store.currentFilePath) return;
+
+    const currentPath = store.currentFilePath;
+    const parts = currentPath.split("/");
+    const oldName = parts.pop() || "";
+    const parentPath = parts.join("/");
+
+    const newName = prompt(`Rename ${oldName} to:`, oldName);
+    if (!newName || newName === oldName) return;
+
+    const newPath = parentPath ? `${parentPath}/${newName}` : newName;
+
+    try {
+      await store.renameNode(currentPath, newPath, "blob");
+
+      // Update the URL to match the newly renamed file
+      if (store.currentRepo) {
+        const owner = store.currentRepo.full_name.split("/")[0];
+        const repo = store.currentRepo.name;
+        const target = `/repo/${owner}/${repo}/${newPath}`;
+        router.replace(target);
+      }
+    } catch (e: any) {
+      console.error(e);
+      await store.openConfirmDialog("Error", "Failed to rename file", "OK", "");
     }
   };
 
@@ -112,5 +135,6 @@ export function useFileActions() {
     triggerUpload,
     handleDrop,
     deleteCurrentFile,
+    renameCurrentFile,
   };
 }
