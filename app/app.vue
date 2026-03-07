@@ -1,5 +1,6 @@
 <template>
   <div class="app-root" :class="{ 'is-pwa': isPwa }">
+    <VitePwaManifest />
     <NuxtRouteAnnouncer />
     <NuxtPage />
     <EditorTemplateSelector />

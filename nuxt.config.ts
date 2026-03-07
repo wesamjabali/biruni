@@ -3,7 +3,42 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
   ssr: false,
-  modules: ["@pinia/nuxt", "@vueuse/nuxt"],
+  modules: ["@pinia/nuxt", "@vueuse/nuxt", "@vite-pwa/nuxt"],
+  pwa: {
+    registerType: "autoUpdate",
+    manifest: {
+      name: "Biruni",
+      short_name: "Biruni",
+      display: "standalone",
+      background_color: "#1e1e1e",
+      theme_color: "#1e1e1e",
+      icons: [
+        {
+          src: "/favicon.jpeg",
+          sizes: "192x192 512x512",
+          type: "image/jpeg",
+        },
+      ],
+      scope: "/",
+    },
+    workbox: {
+      navigateFallback: "/",
+      globPatterns: ["**/*.{js,css,html,png,svg,ico,jpeg}"],
+      cleanupOutdatedCaches: true,
+      clientsClaim: true,
+      skipWaiting: true,
+      maximumFileSizeToCacheInBytes: 10485760,
+    },
+    client: {
+      installPrompt: true,
+    },
+    devOptions: {
+      enabled: true,
+      suppressWarnings: true,
+      navigateFallbackAllowlist: [/^\/$/],
+      type: "module",
+    },
+  },
   css: ["~/assets/css/main.scss"],
   runtimeConfig: {
     githubClientId: "",
@@ -49,7 +84,6 @@ export default defineNuxtConfig({
       link: [
         { rel: "icon", type: "image/jpeg", href: "/favicon.jpeg" },
         { rel: "apple-touch-icon", href: "/favicon.jpeg" },
-        { rel: "manifest", href: "/manifest.json" },
         {
           rel: "stylesheet",
           href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lato:wght@400;700;900&family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&family=Source+Sans+3:wght@400;600;700&family=Nunito:wght@400;600;700;800&family=Merriweather:wght@400;700;900&family=Playfair+Display:wght@400;700;900&family=Lora:wght@400;600;700&family=PT+Serif:wght@400;700&family=Crimson+Text:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Fira+Code:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&family=Source+Code+Pro:wght@400;600;700&family=Space+Mono:wght@400;700&family=Ubuntu+Mono:wght@400;700&family=Orbitron:wght@400;600;900&family=Righteous&family=Bebas+Neue&family=Pacifico&family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap",

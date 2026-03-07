@@ -53,6 +53,7 @@
   "devDependencies": {
     "@lezer/highlight": "^1.2.3",
     "@types/markdown-it": "^14.1.2",
-    "@types/node": "^25.0.0"
+    "@types/node": "^25.0.0",
+    "@vite-pwa/nuxt": "^1.1.1"
   }
 }
