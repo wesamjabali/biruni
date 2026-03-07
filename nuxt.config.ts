@@ -50,7 +50,7 @@ export default defineNuxtConfig({
       gitPat: process.env.GITHUB_PAT || "",
       geminiApiKey: process.env.GEMINI_API_KEY || "",
       gitlabBaseUrl: process.env.GITLAB_BASE_URL || "https://gitlab.com",
-    }
+    },
   },
   app: {
     head: {

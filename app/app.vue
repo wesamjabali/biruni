@@ -38,11 +38,8 @@ const ghStore = useGitStore();
 const ui = useUIStore();
 const route = useRoute();
 
-
 const isStandalone = useMediaQuery("(display-mode: standalone)");
 const isPwa = computed(() => {
-  
-   
   const isIosStandalone =
     typeof window !== "undefined" && (window.navigator as any)?.standalone;
   return isStandalone.value || isIosStandalone;
@@ -56,14 +53,11 @@ watch(visibility, (current, previous) => {
   }
 });
 
-
 onMounted(async () => {
-  
   if (ghStore.currentRepo) {
     await settings.loadSettings();
   }
 });
-
 
 watch(
   () => ghStore.currentRepo,
@@ -71,9 +65,8 @@ watch(
     if (newRepo) {
       await settings.loadSettings();
     }
-  }
+  },
 );
-
 
 const applyStyles = () => {
   const root = document.documentElement;
@@ -90,13 +83,11 @@ const applyStyles = () => {
   root.style.setProperty("--sidebar-width", `${settings.sidebarWidth}px`);
   root.style.setProperty(
     "--preview-font-size",
-    `${settings.previewFontSize}px`
+    `${settings.previewFontSize}px`,
   );
 
-  
   root.style.fontSize = `calc(16px * ${settings.uiScale})`;
 };
-
 
 watch(
   () => [
@@ -111,13 +102,16 @@ watch(
     settings.previewFontSize,
   ],
   applyStyles,
-  { immediate: true }
+  { immediate: true },
 );
 
 const isOnSettingsPage = computed(() => {
-  
   const isLoginScreen = route.path === "/" && !ghStore.token;
-  return route.path === "/settings" || route.path.startsWith("/repo/") || isLoginScreen;
+  return (
+    route.path === "/settings" ||
+    route.path.startsWith("/repo/") ||
+    isLoginScreen
+  );
 });
 </script>
 
